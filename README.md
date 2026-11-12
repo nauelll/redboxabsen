@@ -60,3 +60,8 @@ git push -u origin main
 - PDF gabungan dapat menambah halaman otomatis jika tabel Aulia dan Eka tidak muat di satu halaman.
 - Statistik dashboard dihitung dari catatan pada bulan terpilih.
 - Untuk penggunaan produksi, uji login, kebijakan RLS, input ganda, dan hasil PDF sebelum dipakai operasional.
+
+
+## UI Update — Nauell Tech
+
+Dashboard refreshed with a clean SaaS layout, responsive sidebar, monthly attendance calendar, latest attendance activity, and Nauell Tech copyright footer. Existing Supabase authentication, public dashboard access, attendance CRUD, realtime subscription, filters, and PDF export logic are retained.

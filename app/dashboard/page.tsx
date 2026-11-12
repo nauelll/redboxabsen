@@ -1,4 +1,4 @@
-﻿ "use client";
+ "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -128,15 +128,29 @@ export default function Dashboard() {
   }
   async function logout() { await supabase.auth.signOut(); router.push("/login"); }
   const today = new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const [calendarYear, calendarMonth] = month.split("-").map(Number);
+  const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
+  const firstWeekday = new Date(calendarYear, calendarMonth - 1, 1).getDay();
+  const calendarCells: (number | null)[] = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1)
+  ];
+  const monthLabel = new Date(calendarYear, calendarMonth - 1, 1)
+    .toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const recentRows = rows.slice(0, 5);
   return <main className="dashboard-shell">
     <aside className="sidebar">
-      <img className="side-logo" src="/redbox-logo.png" alt="Logo REDBOX"/>
-      <div className="side-caption">LIVE ATTENDANCE</div>
-      <div className="nav-active"><CalendarDays size={18}/> Absensi Host</div>
-      {isAdmin ? <div className="sidebar-bottom"><div className="admin-chip"><div className="admin-avatar">A</div><div><b>Administrator</b><small>REDBOX Control</small></div></div><button className="logout-btn" onClick={logout}><LogOut size={17}/> Keluar</button></div> : <div className="sidebar-bottom"><button className="logout-btn" onClick={()=>router.push("/login")}>Login Admin</button></div>}
+      <div className="sidebar-brand"><img className="side-logo" src="/redbox-logo.png" alt="Logo REDBOX"/><div><b>REDBOX</b><small>LIVE ATTENDANCE</small></div></div>
+      <div className="side-caption">WORKSPACE</div>
+      <div className="nav-active"><CalendarDays size={18}/> Dashboard</div>
+      <div className="side-nav-item"><Users size={18}/> Data Host</div>
+      <div className="side-nav-item"><Clock3 size={18}/> Riwayat Absensi</div>
+      <div className="sidebar-spacer"/>
+      <div className="sidebar-brand-note"><b>REDBOX</b><strong>Live Attendance</strong><small>Track. Manage. Grow.</small></div>
+      <div className="sidebar-bottom">{isAdmin ? <><div className="admin-chip"><div className="admin-avatar">A</div><div><b>Administrator</b><small>REDBOX Control</small></div></div><button className="logout-btn" onClick={logout}><LogOut size={17}/> Keluar</button></> : <button className="logout-btn" onClick={()=>router.push("/login")}>Login Admin</button>}</div>
     </aside>
     <section className="main-content">
-      <header className="topbar"><div><div className="eyebrow">REDBOX / OPERASIONAL</div><h1>Attendance <em>overview.</em></h1><p className="muted">{today}</p></div><div className="live-pill"><span/> LIVE DATABASE</div></header>
+      <header className="topbar"><div><div className="eyebrow">REDBOX / OPERASIONAL</div><h1>Dashboard</h1><p className="muted">Selamat datang di REDBOX Live Attendance · {today}</p></div><div className="topbar-right"><div className="live-pill"><span/> LIVE DATABASE</div><div className="date-chip"><CalendarDays size={16}/>{monthLabel}</div></div></header>
       <section className="hero-panel"><div className="hero-copy"><div className="eyebrow light">HOST PERFORMANCE TRACKER</div><h2>Good work deserves<br/><em>to be seen.</em></h2><p>Kelola kehadiran host live Aulia dan Eka dalam satu ruang kerja.</p></div><div className="hero-stamp"><Sparkles size={23}/><span>REDBOX<br/>LIVE TEAM</span></div><div className="hero-glow"/></section>
       <section className="stat-grid">
         <Stat icon={<CheckCircle2/>} label="Full" value={counts.full} tone="green"/>
@@ -144,6 +158,30 @@ export default function Dashboard() {
         <Stat icon={<Palmtree/>} label="Libur" value={counts.holiday} tone="red"/>
         <Stat icon={<HeartPulse/>} label="Sakit" value={counts.sick} tone="blue"/>
       </section>
+      <div className="overview-grid">
+        <section className="panel calendar-panel">
+          <div className="panel-heading"><div><div className="eyebrow">MONTHLY OVERVIEW</div><h3>Kalender Absensi</h3></div><span className="panel-icon"><CalendarDays size={18}/></span></div>
+          <div className="calendar-month"><b>{monthLabel}</b><span className="calendar-hint">Titik menunjukkan catatan absensi</span></div>
+          <div className="calendar-grid">
+            {["Min","Sen","Sel","Rab","Kam","Jum","Sab"].map(day=><div className="calendar-weekday" key={day}>{day}</div>)}
+            {calendarCells.map((day,index)=>{
+              if (!day) return <div className="calendar-day blank" key={`blank-${index}`}/>;
+              const dateKey = `${month}-${String(day).padStart(2,"0")}`;
+              const dayRows = rows.filter(r=>r.attendance_date===dateKey);
+              const isToday = new Date().toISOString().slice(0,10)===dateKey;
+              return <div className={`calendar-day ${isToday?"today":""}`} key={dateKey}>
+                <span>{day}</span>
+                <div className="calendar-dots">{dayRows.map(r=><i key={r.id} className={`dot-${r.status}`} title={`${r.host}: ${STATUS_LABELS[r.status]}`}/>)}</div>
+              </div>;
+            })}
+          </div>
+          <div className="calendar-legend"><span><i className="dot-full"/> Full</span><span><i className="dot-four_hours"/> 4 Jam</span><span><i className="dot-holiday"/> Libur</span><span><i className="dot-sick"/> Sakit</span></div>
+        </section>
+        <section className="panel activity-panel">
+          <div className="panel-heading"><div><div className="eyebrow">LIVE UPDATES</div><h3>Aktivitas Terbaru</h3></div><span className="panel-icon"><RefreshCw size={18}/></span></div>
+          {recentRows.length===0 ? <div className="activity-empty">Belum ada aktivitas pada bulan ini.</div> : recentRows.map(r=><div className="activity-row" key={r.id}><div className={`host-avatar ${r.host.toLowerCase()}`}>{r.host[0]}</div><div className="host-info"><b>{r.host}</b><small>{new Date(`${r.attendance_date}T00:00:00`).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}</small></div><span className={`status-badge ${r.status}`}>{STATUS_LABELS[r.status]}</span></div>)}
+        </section>
+      </div>
       <div className="content-grid">
         {isAdmin && <section className="panel entry-panel"><div className="panel-heading"><div><div className="eyebrow">DAILY INPUT</div><h3>{editingId ? "Edit absensi" : "Tambah absensi"}</h3></div><span className="panel-icon"><Plus size={18}/></span></div>
           <form onSubmit={save} className="entry-form">
@@ -157,7 +195,7 @@ export default function Dashboard() {
           </form>
         </section>}
         <section className="panel roster-panel"><div className="panel-heading"><div><div className="eyebrow">HOST DIRECTORY</div><h3>Tim host</h3></div><Users size={20}/></div>
-          {HOSTS.map(h=>{const mine=rows.filter(r=>r.host===h);const worked=mine.filter(r=>r.status==="full"||r.status==="four_hours").length;return <div className="host-row" key={h}><div className={`host-avatar ${h.toLowerCase()}`}>{h[0]}</div><div className="host-info"><b>{h}</b><small>{mine.length} hari tercatat Â· {worked} hari aktif</small></div><span className="host-dot"/></div>})}
+          {HOSTS.map(h=>{const mine=rows.filter(r=>r.host===h);const worked=mine.filter(r=>r.status==="full"||r.status==="four_hours").length;return <div className="host-row" key={h}><div className={`host-avatar ${h.toLowerCase()}`}>{h[0]}</div><div className="host-info"><b>{h}</b><small>{mine.length} hari tercatat · {worked} hari aktif</small></div><span className="host-dot"/></div>})}
           <div className="roster-note">Satu catatan absensi untuk setiap host pada setiap tanggal. Input ulang tanggal yang sama akan memperbarui status.</div>
         </section>
       </div>
@@ -166,7 +204,7 @@ export default function Dashboard() {
         <div className="table-wrap"><table><thead><tr><th>TANGGAL</th><th>HOST</th><th>STATUS</th><th>CATATAN</th>{isAdmin && <th>AKSI</th>}</tr></thead><tbody>{loading?<tr><td colSpan={5} className="empty">Memuat data...</td></tr>:filtered.length===0?<tr><td colSpan={5} className="empty">Belum ada data pada periode ini.</td></tr>:filtered.map(r=><tr key={r.id}><td>{new Date(`${r.attendance_date}T00:00:00`).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}</td><td><b>{r.host}</b></td><td><span className={`status-badge ${r.status}`}>{STATUS_LABELS[r.status]}</span></td><td>{r.note || ""}</td>{isAdmin && <td><button type="button" className="icon-btn" onClick={()=>startEdit(r)}>Edit</button></td>}</tr>)}</tbody></table></div>
         <div className="records-foot"><span>{filtered.length} catatan ditampilkan</span><div className="pdf-actions"><button onClick={()=>exportAttendancePdf(rows,month,"Aulia")}><Download size={15}/> PDF Aulia</button><button onClick={()=>exportAttendancePdf(rows,month,"Eka")}><Download size={15}/> PDF Eka</button><button className="pdf-primary" onClick={()=>exportAttendancePdf(rows,month,"Semua")}><Download size={15}/> PDF Gabungan</button></div></div>
       </section>
-      <footer>Â© {new Date().getFullYear()} REDBOX Â· LIVE ATTENDANCE SYSTEM <span>DESIGNED FOR THE TEAM</span></footer>
+      <footer className="app-footer"><div className="footer-brand"><img src="/redbox-logo.png" alt="REDBOX"/><span>REDBOX <small>LIVE ATTENDANCE</small></span></div><span className="footer-tagline">Professional Attendance Solution</span><strong>© {new Date().getFullYear()} <em>Nauell Tech.</em> All rights reserved.</strong></footer>
     </section>
   </main>;
 }

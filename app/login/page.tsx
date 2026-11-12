@@ -31,6 +31,7 @@ export default function LoginPage() {
         <button className="primary-btn" disabled={busy}>{busy ? "Memproses..." : "Masuk ke dashboard"} <ArrowRight size={17}/></button>
       </form>
       <div className="login-foot"><LockKeyhole size={14}/> Area khusus admin REDBOX</div>
+      <div className="login-copyright">© {new Date().getFullYear()} <b>Nauell Tech.</b> All rights reserved.</div>
     </section>
     <div className="login-orb orb-one"/><div className="login-orb orb-two"/>
   </main>;
