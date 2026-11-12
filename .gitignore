@@ -1,0 +1,14 @@
+node_modules
+.next
+.env.local
+.DS_Store
+
+.env*
+!.env.example
+node_modules/
+.next/
+
+# Backup dan cache TypeScript
+*.backup
+*.backup-*
+*.tsbuildinfo
