@@ -150,8 +150,8 @@ export default function Dashboard() {
       <div className="sidebar-bottom">{isAdmin ? <><div className="admin-chip"><div className="admin-avatar">A</div><div><b>Administrator</b><small>REDBOX Control</small></div></div><button className="logout-btn" onClick={logout}><LogOut size={17}/> Keluar</button></> : <button className="logout-btn" onClick={()=>router.push("/login")}>Login Admin</button>}</div>
     </aside>
     <section className="main-content">
-      <header className="topbar"><div><div className="eyebrow">REDBOX / OPERASIONAL</div><h1>Dashboard</h1><p className="muted">Selamat datang di REDBOX Live Attendance · {today}</p></div><div className="topbar-right"><div className="live-pill"><span/> LIVE DATABASE</div><div className="date-chip"><CalendarDays size={16}/>{monthLabel}</div></div></header>
-      <section className="hero-panel"><div className="hero-copy"><div className="eyebrow light">HOST PERFORMANCE TRACKER</div><h2>Good work deserves<br/><em>to be seen.</em></h2><p>Kelola kehadiran host live Aulia dan Eka dalam satu ruang kerja.</p></div><div className="hero-stamp"><Sparkles size={23}/><span>REDBOX<br/>LIVE TEAM</span></div><div className="hero-glow"/></section>
+      <header className="topbar"><div><div className="eyebrow">REDBOX / OPERASIONAL</div><h1>Dashboard</h1><p className="muted">Selamat datang di REDBOX Live Attendance Host · {today}</p></div><div className="topbar-right"><div className="live-pill"><span/> LIVE DATABASE</div><div className="date-chip"><CalendarDays size={16}/>{monthLabel}</div></div></header>
+      <section className="hero-panel"><div className="hero-copy"><div className="eyebrow light">HOST PERFORMANCE TRACKER</div><h2>Good work deserves<br/><em>to be seen.</em></h2><p>Kelola kehadiran Host Redbox.</p></div><div className="hero-stamp"><Sparkles size={23}/><span>REDBOX<br/>LIVE TEAM</span></div><div className="hero-glow"/></section>
       <section className="stat-grid">
         <Stat icon={<CheckCircle2/>} label="Full" value={counts.full} tone="green"/>
         <Stat icon={<Clock3/>} label="4 Jam" value={counts.four_hours} tone="yellow"/>
