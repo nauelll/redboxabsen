@@ -102,3 +102,26 @@ with check (exists (select 1 from public.admin_users a where a.user_id = auth.ui
 -- 2. Salin UUID user tersebut.
 -- 3. Jalankan: insert into public.admin_users(user_id) values ('UUID-ADMIN-DI-SINI');
 -- Jangan pernah menaruh service_role key di frontend/Vercel public variables.
+
+-- BACKGROUND MUSIC WEBSITE (semua halaman)
+create table if not exists public.site_music (
+  id integer primary key default 1 check (id = 1),
+  enabled boolean not null default false,
+  track_url text not null default '',
+  title text not null default 'REDBOX Background Music',
+  volume integer not null default 35 check (volume between 0 and 100),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.site_music (id) values (1) on conflict (id) do nothing;
+alter table public.site_music enable row level security;
+
+drop policy if exists "Public can read site music" on public.site_music;
+create policy "Public can read site music" on public.site_music
+for select to anon, authenticated using (true);
+
+drop policy if exists "Allowlisted admin manages site music" on public.site_music;
+create policy "Allowlisted admin manages site music" on public.site_music
+for all to authenticated
+using (exists (select 1 from public.admin_users a where a.user_id = auth.uid()))
+with check (exists (select 1 from public.admin_users a where a.user_id = auth.uid()));
