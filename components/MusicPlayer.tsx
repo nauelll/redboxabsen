@@ -34,13 +34,17 @@ export default function MusicPlayer() {
   const [audioError, setAudioError] = useState(false);
 
   const tracks = useMemo<MusicTrack[]>(() => {
-    if (settings.tracks?.length) return settings.tracks;
-    return settings.track_url
-      ? [{ id: "external-track", url: settings.track_url, title: settings.title || "REDBOX Music" }]
-      : [];
+    const uploaded = settings.tracks || [];
+    if (settings.track_url && !uploaded.some((track) => track.url === settings.track_url)) {
+      return [
+        { id: "external-track", url: settings.track_url, title: settings.title || "REDBOX Music" },
+        ...uploaded,
+      ];
+    }
+    return uploaded;
   }, [settings.tracks, settings.track_url, settings.title]);
 
-  const currentTrack = tracks[trackIndex] || tracks[0] || null;
+  const currentTrack = settings.track_url ? tracks[trackIndex] || null : null;
 
   useEffect(() => {
     let active = true;
