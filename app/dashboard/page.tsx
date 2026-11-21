@@ -884,8 +884,8 @@ export default function Dashboard() {
             />
           )}
           <div>
-            <b>REDBOX</b>
-            <small>Live Attendance</small>
+            <b>REDBOX OFFICIAL</b>
+            <small>LIVE ABSEN</small>
           </div>
         </div>
 
@@ -1068,14 +1068,14 @@ export default function Dashboard() {
                 <div className="hero-grid-pattern" />
                 <div className="hero-glow" />
                 <div className="hero-copy">
-                  <p className="hero-kicker">Host Performance Tracker · {monthLabel}</p>
+                  <p className="hero-kicker">WALAIKUMSALAM W.R.B· {monthLabel}</p>
                   <h2>
-                    Good work deserves
+                    Redbox Absen
                     <br />
-                    <em>to be seen.</em>
+                    <em>Real Time Kalo Di Update.</em>
                   </h2>
                   <p className="hero-sub">
-                    Pantau kehadiran Host Redbox secara terstruktur dengan rekap bulanan instan.
+                    KLIK DATA HOST TEH CEK REKAPAN INSTAN
                   </p>
                 </div>
                 <div className="hero-actions">
