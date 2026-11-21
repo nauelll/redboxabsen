@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 export type Host = string;
 export const DEFAULT_HOSTS: Host[] = ["Aulia", "Eka"];
 
@@ -29,13 +28,6 @@ export const STATUS_LABELS: Record<Status, string> = {
   full: "Full",
 };
 
-=======
-export type Host = "Aulia" | "Eka";
-export type Status = "holiday" | "sick" | "four_hours" | "full";
-export const STATUS_LABELS: Record<Status,string> = {
-  holiday: "Libur", sick: "Sakit", four_hours: "4 Jam", full: "Full"
-};
->>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
 export type Attendance = {
   id: string;
   attendance_date: string;
