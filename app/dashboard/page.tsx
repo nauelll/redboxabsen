@@ -32,6 +32,7 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  Music2,
   Palmtree,
   Pencil,
   Plus,
@@ -48,10 +49,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { exportAttendancePdf } from "@/lib/pdf";
 import LaunchSplash from "@/components/LaunchSplash";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import AdminMusicSettings from "@/components/AdminMusicSettings";
 
 const STATUSES: Status[] = ["full", "four_hours", "holiday", "sick"];
 
-type NavTab = "overview" | "hosts" | "history";
+type NavTab = "overview" | "hosts" | "history" | "music";
 
 function getLocalDateStr(d = new Date()): string {
   const y = d.getFullYear();
@@ -854,12 +856,14 @@ export default function Dashboard() {
       badge: isAdmin && pendingPhotoRequests.length > 0 ? pendingPhotoRequests.length : undefined,
     },
     { id: "history", label: "Riwayat Absensi", icon: <Clock3 size={17} /> },
+    ...(isAdmin ? [{ id: "music" as NavTab, label: "Pengaturan Musik", icon: <Music2 size={17} /> }] : []),
   ];
 
   const pageTitles: Record<NavTab, string> = {
     overview: "Dashboard",
     hosts: "Data Host",
     history: "Riwayat Absensi",
+    music: "Pengaturan Musik",
   };
 
   return (
@@ -1047,6 +1051,11 @@ export default function Dashboard() {
         </div>
 
         <AnimatePresence mode="wait">
+          {activeTab === "music" && isAdmin && (
+            <motion.div key="tab-music" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.24 }}>
+              <AdminMusicSettings />
+            </motion.div>
+          )}
           {activeTab === "overview" && (
             <motion.div
               key="tab-overview"
