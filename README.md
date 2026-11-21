@@ -65,3 +65,11 @@ git push -u origin main
 ## UI Update — Nauell Tech
 
 Dashboard refreshed with a clean SaaS layout, responsive sidebar, monthly attendance calendar, latest attendance activity, and Nauell Tech copyright footer. Existing Supabase authentication, public dashboard access, attendance CRUD, realtime subscription, filters, and PDF export logic are retained.
+
+
+## 5. Background Music (site-wide)
+1. Setelah schema awal tersedia, buka Supabase > SQL Editor.
+2. Jalankan hanya file `supabase/migrations/20261121_site_music_playlist.sql` untuk menambahkan playlist dan bucket musik. Migration ini hanya menambah konfigurasi musik dan memperketat pembacaan pengajuan foto; tidak mengubah atau menghapus tabel/data absensi.
+3. Login sebagai akun yang terdaftar di `admin_users`, buka Dashboard > Pengaturan Musik.
+4. Unggah file audio (maksimal 20 MB per file), pilih lagu aktif, atur volume, lalu simpan.
+5. Browser dapat memblokir autoplay bersuara. Pengunjung cukup menekan tombol Play satu kali untuk memulai musik.
