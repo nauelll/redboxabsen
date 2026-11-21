@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "dev": "next dev -p 3000 -H 0.0.0.0",
+=======
+    "dev": "next dev",
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -14,7 +18,10 @@
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.468.0",
+<<<<<<< HEAD
     "motion": "^14.14.0",
+=======
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

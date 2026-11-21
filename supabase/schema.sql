@@ -5,6 +5,7 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
+<<<<<<< HEAD
 create table if not exists public.hosts (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -35,6 +36,12 @@ create table if not exists public.attendance (
   id uuid primary key default gen_random_uuid(),
   attendance_date date not null,
   host text not null,
+=======
+create table if not exists public.attendance (
+  id uuid primary key default gen_random_uuid(),
+  attendance_date date not null,
+  host text not null check (host in ('Aulia','Eka')),
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
   status text not null check (status in ('holiday','sick','four_hours','full')),
   note text,
   created_at timestamptz not null default now(),
@@ -42,21 +49,28 @@ create table if not exists public.attendance (
   unique(attendance_date, host)
 );
 
+<<<<<<< HEAD
 -- Jika upgrading dari schema lama yang memakai CHECK (host in ('Aulia','Eka')), hapus constraint lama:
 alter table public.attendance drop constraint if exists attendance_host_check;
 
+=======
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
 create index if not exists attendance_date_idx on public.attendance(attendance_date desc);
 create index if not exists attendance_host_idx on public.attendance(host);
 
 alter table public.admin_users enable row level security;
+<<<<<<< HEAD
 alter table public.hosts enable row level security;
 alter table public.host_photo_requests enable row level security;
+=======
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
 alter table public.attendance enable row level security;
 
 drop policy if exists "Admin can read own allowlist" on public.admin_users;
 create policy "Admin can read own allowlist" on public.admin_users
 for select to authenticated using (user_id = auth.uid());
 
+<<<<<<< HEAD
 drop policy if exists "Public can read hosts" on public.hosts;
 create policy "Public can read hosts" on public.hosts
 for select to anon, authenticated using (true);
@@ -91,6 +105,8 @@ drop policy if exists "Public can read attendance" on public.attendance;
 create policy "Public can read attendance" on public.attendance
 for select to anon, authenticated using (true);
 
+=======
+>>>>>>> 335cafa28b6e8524310779a6d02437148a1f79ca
 drop policy if exists "Allowlisted admin manages attendance" on public.attendance;
 create policy "Allowlisted admin manages attendance" on public.attendance
 for all to authenticated
