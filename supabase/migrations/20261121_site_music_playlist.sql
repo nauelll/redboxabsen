@@ -19,6 +19,17 @@ on conflict (id) do nothing;
 
 alter table public.site_music enable row level security;
 
+drop policy if exists "Anyone can read photo requests" on public.host_photo_requests;
+drop policy if exists "Allowlisted admins read photo requests" on public.host_photo_requests;
+create policy "Allowlisted admins read photo requests" on public.host_photo_requests
+for select to authenticated
+using (
+  exists (
+    select 1 from public.admin_users a
+    where a.user_id = auth.uid()
+  )
+);
+
 drop policy if exists "Public can read site music" on public.site_music;
 create policy "Public can read site music" on public.site_music
 for select to anon, authenticated
