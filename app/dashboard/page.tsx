@@ -131,6 +131,11 @@ export default function Dashboard() {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [exportingTarget, setExportingTarget] = useState<string | null>(null);
+  const [exportModal, setExportModal] = useState(false);
+  const [exportStart, setExportStart] = useState(() => `${getLocalMonthStr()}-01`);
+  const [exportEnd, setExportEnd] = useState(() => getLocalDateStr());
+  const [salaryPaid, setSalaryPaid] = useState(false);
+  const [salaryPaidDate, setSalaryPaidDate] = useState(() => getLocalDateStr());
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -805,9 +810,32 @@ export default function Dashboard() {
   }
 
   async function handleExport(target: Host | "Semua") {
+    if (!exportStart || !exportEnd || exportStart > exportEnd) {
+      setMessage("Rentang tanggal PDF tidak valid.");
+      return;
+    }
     setExportingTarget(target);
     try {
-      await exportAttendancePdf(rows, month, target, activeHostNames);
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .gte("attendance_date", exportStart)
+        .lte("attendance_date", exportEnd)
+        .order("attendance_date", { ascending: true });
+      if (error) throw error;
+      await exportAttendancePdf(
+        (data || []) as Attendance[],
+        exportStart.slice(0, 7),
+        target,
+        activeHostNames,
+        exportStart,
+        exportEnd,
+        salaryPaid ? "paid" : "unpaid",
+        salaryPaid ? salaryPaidDate : undefined
+      );
+      setExportModal(false);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Gagal membuat PDF.");
     } finally {
       window.setTimeout(() => setExportingTarget(null), 350);
     }
@@ -1007,7 +1035,12 @@ export default function Dashboard() {
               <button
                 type="button"
                 className="topbar-cta secondary"
-                onClick={() => handleExport("Semua")}
+                onClick={() => {
+                  setExportStart(`${month}-01`);
+                  const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
+                  setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`);
+                  setExportModal(true);
+                }}
                 disabled={exportingTarget !== null}
               >
                 {exportingTarget === "Semua" ? (
@@ -1082,7 +1115,12 @@ export default function Dashboard() {
                   <button
                     type="button"
                     className="hero-btn"
-                    onClick={() => handleExport("Semua")}
+                    onClick={() => {
+                      setExportStart(`${month}-01`);
+                      const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
+                      setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`);
+                      setExportModal(true);
+                    }}
                     disabled={exportingTarget !== null}
                   >
                     {exportingTarget === "Semua" ? (
@@ -2052,6 +2090,33 @@ export default function Dashboard() {
       </section>
 
       {/* Public Profile Photo Request Modal */}
+      <AnimatePresence>
+        {exportModal && (
+          <motion.div className="photo-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExportModal(false)}>
+            <motion.div className="photo-modal" initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 18, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-heading">
+                <div><span className="eyebrow">LAPORAN CUSTOM</span><h2>Ekspor Absensi PDF</h2></div>
+                <button type="button" className="icon-btn" onClick={() => setExportModal(false)} aria-label="Tutup"><X size={18} /></button>
+              </div>
+              <div className="photo-form">
+                <label>Dari tanggal<input type="date" value={exportStart} onChange={(e) => setExportStart(e.target.value)} /></label>
+                <label>Sampai tanggal<input type="date" value={exportEnd} min={exportStart} onChange={(e) => setExportEnd(e.target.value)} /></label>
+                <label className="checkbox-row"><input type="checkbox" checked={salaryPaid} onChange={(e) => setSalaryPaid(e.target.checked)} /> Gaji sudah dibayar untuk periode ini</label>
+                {salaryPaid && <label>Tanggal pembayaran<input type="date" value={salaryPaidDate} onChange={(e) => setSalaryPaidDate(e.target.value)} /></label>}
+                <p className="form-hint">Tanggal bebas dipilih, termasuk melewati pergantian bulan. Status pembayaran akan dicantumkan pada PDF yang diunduh.</p>
+                <div className="modal-actions">
+                  <button type="button" className="secondary-btn" onClick={() => setExportModal(false)}>Batal</button>
+                  <button type="button" className="primary-btn" disabled={exportingTarget !== null || !exportStart || !exportEnd || exportStart > exportEnd} onClick={() => handleExport("Semua")}>
+                    {exportingTarget === "Semua" ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
+                    <span>Unduh PDF</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {photoModalHost && (
           <motion.div
