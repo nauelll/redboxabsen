@@ -8,15 +8,15 @@ export const metadata: Metadata = {
   applicationName: "REDBOX LIVE ATTENDANCE",
   manifest: "/manifest.webmanifest",
   themeColor: "#dc2626",
+  icons: {
+    icon: [{ url: "/redbox-app-icon.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/redbox-app-icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/redbox-app-icon.svg", type: "image/svg+xml" }],
+  },
   appleWebApp: {
     capable: true,
     title: "REDBOX Attendance",
     statusBarStyle: "default",
-  },
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
   },
 };
 
