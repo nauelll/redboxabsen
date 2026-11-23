@@ -21,12 +21,9 @@ async function loadLogo(): Promise<string | null> {
 export async function exportAttendancePdf(
   rows: Attendance[],
   month: string,
-  selected: Host | "Semua",
-  allHosts: Host[] = DEFAULT_HOSTS,
+  selected: Host,
   startDate = `${month}-01`,
-  endDate = `${month}-${String(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()).padStart(2, "0")}`,
-  paymentStatus: "paid" | "unpaid" = "unpaid",
-  paidDate?: string
+  endDate = `${month}-${String(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()).padStart(2, "0")}`
 ) {
   // Format portrait agar laporan mudah dibaca dan hemat kertas.
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -38,10 +35,7 @@ export async function exportAttendancePdf(
     });
   const rangeLabel = `${formatDate(startDate)} – ${formatDate(endDate)}`;
 
-  const hosts: Host[] =
-    selected === "Semua"
-      ? (allHosts.length ? allHosts : DEFAULT_HOSTS)
-      : [selected];
+  const hosts: Host[] = [selected];
   const filtered = rows.filter(
     (r) => hosts.includes(r.host) && r.attendance_date >= startDate && r.attendance_date <= endDate
   );
@@ -85,7 +79,7 @@ export async function exportAttendancePdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(105, 105, 110);
-  doc.text(selected === "Semua" ? "Semua host" : selected, pageWidth - 10, 18, { align: "right" });
+  doc.text(selected, pageWidth - 10, 18, { align: "right" });
   doc.setFontSize(7);
   doc.text(rangeLabel, pageWidth - 10, 22, { align: "right" });
 
@@ -179,16 +173,6 @@ export async function exportAttendancePdf(
   const summaryLines = doc.splitTextToSize(summary.join("     |     "), pageWidth - 20);
   doc.text(summaryLines, 10, summaryY);
 
-  const statusY = Math.min(summaryY + summaryLines.length * 3.2 + 4, pageHeight - 17);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(paymentStatus === "paid" ? 22 : 190, paymentStatus === "paid" ? 125 : 35, paymentStatus === "paid" ? 70 : 40);
-  doc.text(paymentStatus === "paid" ? "STATUS GAJI: SUDAH DIBAYAR" : "STATUS GAJI: BELUM DIBAYAR", 10, statusY);
-  if (paymentStatus === "paid" && paidDate) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text(`Dibayarkan pada: ${formatDate(paidDate)} | Periode: ${rangeLabel}`, 10, statusY + 5);
-  }
   doc.setFontSize(7);
   doc.setTextColor(130, 130, 135);
   doc.text(`Dicetak: ${new Date().toLocaleDateString("id-ID")}  |  REDBOX INTERNAL`, 10, pageHeight - 5);
