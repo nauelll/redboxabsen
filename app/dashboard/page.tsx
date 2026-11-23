@@ -132,11 +132,9 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [exportingTarget, setExportingTarget] = useState<string | null>(null);
   const [exportModal, setExportModal] = useState(false);
-  const [exportTarget, setExportTarget] = useState<Host | "Semua">("Semua");
+  const [exportTarget, setExportTarget] = useState<Host>(DEFAULT_HOSTS[0]);
   const [exportStart, setExportStart] = useState(() => `${getLocalMonthStr()}-01`);
   const [exportEnd, setExportEnd] = useState(() => getLocalDateStr());
-  const [salaryPaid, setSalaryPaid] = useState(false);
-  const [salaryPaidDate, setSalaryPaidDate] = useState(() => getLocalDateStr());
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -810,7 +808,7 @@ export default function Dashboard() {
     await Promise.all([loadHosts(), loadPhotoRequests()]);
   }
 
-  async function handleExport(target: Host | "Semua") {
+  async function handleExport(target: Host) {
     if (!exportStart || !exportEnd || exportStart > exportEnd) {
       setMessage("Rentang tanggal PDF tidak valid.");
       return;
@@ -822,17 +820,15 @@ export default function Dashboard() {
         .select("*")
         .gte("attendance_date", exportStart)
         .lte("attendance_date", exportEnd)
+        .eq("host", target)
         .order("attendance_date", { ascending: true });
       if (error) throw error;
       await exportAttendancePdf(
         (data || []) as Attendance[],
         exportStart.slice(0, 7),
         target,
-        activeHostNames,
         exportStart,
-        exportEnd,
-        salaryPaid ? "paid" : "unpaid",
-        salaryPaid ? salaryPaidDate : undefined
+        exportEnd
       );
       setExportModal(false);
     } catch (error) {
@@ -1388,7 +1384,7 @@ export default function Dashboard() {
                         <textarea
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
-                          placeholder="Tambahkan keterangan bila diperlukan..."
+                          placeholder="Contoh: GAJI SUDAH DIBAYAR / BELUM DIBAYAR..."
                           rows={2}
                         />
                       </label>
@@ -2051,19 +2047,6 @@ export default function Dashboard() {
                   <span>PDF {h.name}</span>
                 </button>
               ))}
-              <button
-                type="button"
-                className="pdf-primary"
-                onClick={() => { setExportTarget("Semua"); setExportStart(`${month}-01`); const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate(); setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`); setExportModal(true); }}
-                disabled={exportingTarget !== null}
-              >
-                {exportingTarget === "Semua" ? (
-                  <Loader2 size={14} className="spin-icon" />
-                ) : (
-                  <Download size={14} />
-                )}
-                <span>PDF Gabungan</span>
-              </button>
             </div>
           </div>
         </section>
@@ -2102,14 +2085,12 @@ export default function Dashboard() {
               <div className="entry-form">
                 <label>Dari tanggal<input type="date" value={exportStart} onChange={(e) => setExportStart(e.target.value)} /></label>
                 <label>Sampai tanggal<input type="date" value={exportEnd} min={exportStart} onChange={(e) => setExportEnd(e.target.value)} /></label>
-                <label className="checkbox-row"><input type="checkbox" checked={salaryPaid} onChange={(e) => setSalaryPaid(e.target.checked)} /> Gaji sudah dibayar untuk periode ini</label>
-                {salaryPaid && <label>Tanggal pembayaran<input type="date" value={salaryPaidDate} onChange={(e) => setSalaryPaidDate(e.target.value)} /></label>}
-                <p className="form-hint">Tanggal bebas dipilih, termasuk melewati pergantian bulan. Status pembayaran akan dicantumkan pada PDF yang diunduh.</p>
+                <p className="form-hint">PDF hanya untuk host {exportTarget}. Atur rentang tanggal sesuai periode yang ingin dicetak. Penanda pembayaran dapat ditulis pada kolom Catatan melalui menu Edit absensi.</p>
                 <div className="modal-actions">
                   <button type="button" className="secondary-btn" onClick={() => setExportModal(false)}>Batal</button>
                   <button type="button" className="primary-btn" disabled={exportingTarget !== null || !exportStart || !exportEnd || exportStart > exportEnd} onClick={() => handleExport(exportTarget)}>
-                    {exportingTarget === "Semua" ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
-                    <span>Unduh PDF {exportTarget === "Semua" ? "Gabungan" : exportTarget}</span>
+                    {exportingTarget === exportTarget ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
+                    <span>Unduh PDF {exportTarget}</span>
                   </button>
                 </div>
               </div>
