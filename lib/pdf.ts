@@ -6,9 +6,7 @@ async function loadLogo(): Promise<string | null> {
   try {
     const response = await fetch("/redbox-logo.png");
     if (!response.ok) return null;
-
     const blob = await response.blob();
-
     return await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -26,15 +24,11 @@ export async function exportAttendancePdf(
   selected: Host | "Semua",
   allHosts: Host[] = DEFAULT_HOSTS
 ) {
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pageWidth = 297;
+  // Satu lembar A4 landscape: tanggal sebagai baris, setiap host sebagai kolom.
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const [year, mon] = month.split("-").map(Number);
-
   const monthName = new Date(year, mon - 1, 1).toLocaleDateString("id-ID", {
     month: "long",
     year: "numeric",
@@ -42,162 +36,167 @@ export async function exportAttendancePdf(
 
   const hosts: Host[] =
     selected === "Semua"
-      ? allHosts.length > 0
-        ? allHosts
-        : DEFAULT_HOSTS
+      ? (allHosts.length ? allHosts : DEFAULT_HOSTS)
       : [selected];
-
-  const statuses: Status[] = ["full", "four_hours", "holiday", "sick"];
   const filtered = rows.filter((r) => hosts.includes(r.host));
-  const logo = await loadLogo();
   const days = new Date(year, mon, 0).getDate();
+  const statuses: Status[] = ["full", "four_hours", "holiday", "sick"];
+  const statusShort: Record<Status, string> = {
+    full: "Full",
+    four_hours: "4 Jam",
+    holiday: "Libur",
+    sick: "Sakit",
+  };
 
-  function drawHeader() {
-    if (logo) {
-      try {
-        doc.addImage(logo, "PNG", 12, 9, 20, 20);
-      } catch {
-        doc.setFillColor(218, 0, 24);
-        doc.roundedRect(12, 9, 20, 20, 3, 3, "F");
-      }
-    } else {
+  const logo = await loadLogo();
+
+  // Header dibuat ringkas agar area tabel tetap luas.
+  if (logo) {
+    try {
+      doc.addImage(logo, "PNG", 10, 7, 13, 13);
+    } catch {
       doc.setFillColor(218, 0, 24);
-      doc.roundedRect(12, 9, 20, 20, 3, 3, "F");
+      doc.roundedRect(10, 7, 13, 13, 2, 2, "F");
     }
-
-    doc.setTextColor(35, 35, 40);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(17);
-    doc.text("REDBOX", 37, 17);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 125);
-    doc.text("LIVE ATTENDANCE REPORT", 37, 23);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(30, 30, 35);
-    doc.text("MONTHLY HOST ATTENDANCE", 12, 37);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(110, 110, 115);
-    doc.text(`PERIODE: ${monthName.toUpperCase()}`, 12, 43);
+  } else {
+    doc.setFillColor(218, 0, 24);
+    doc.roundedRect(10, 7, 13, 13, 2, 2, "F");
   }
 
-  // Group into pairs of up to 2 hosts per page for clean 2-column A4 landscape output
-  const hostChunks: Host[][] = [];
-  for (let i = 0; i < hosts.length; i += 2) {
-    hostChunks.push(hosts.slice(i, i + 2));
-  }
+  doc.setTextColor(30, 30, 35);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.text("REDBOX", 27, 13);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 105);
+  doc.text("LAPORAN ABSENSI HOST", 27, 18);
 
-  const gap = 7;
-  const leftMargin = 12;
-  const usableWidth = pageWidth - 24;
-  const startY = 47;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(30, 30, 35);
+  doc.text(monthName.toLocaleUpperCase("id-ID"), pageWidth - 10, 12, {
+    align: "right",
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(105, 105, 110);
+  doc.text(
+    selected === "Semua" ? "Semua host" : selected,
+    pageWidth - 10,
+    18,
+    { align: "right" }
+  );
 
-  hostChunks.forEach((chunk, chunkIdx) => {
-    if (chunkIdx > 0) doc.addPage();
-    drawHeader();
-
-    const columnWidth =
-      chunk.length === 2 ? (usableWidth - gap) / 2 : usableWidth;
-
-    chunk.forEach((host, index) => {
-      const x =
-        chunk.length === 2
-          ? leftMargin + index * (columnWidth + gap)
-          : leftMargin;
-
-      const mine = filtered.filter((r) => r.host === host);
-      const counts = statuses.map(
-        (s) => mine.filter((r) => r.status === s).length
-      );
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(35, 35, 40);
-      doc.text(host.toUpperCase(), x, startY);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      doc.setTextColor(90, 90, 95);
-      doc.text(
-        `Full ${counts[0]}  |  4 Jam ${counts[1]}  |  Libur ${counts[2]}  |  Sakit ${counts[3]}  |  Total ${mine.length}`,
-        x,
-        startY + 5
-      );
-
-      const dayRows = Array.from({ length: days }, (_, i) => {
-        const day = i + 1;
-        const date = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const found = mine.find((r) => r.attendance_date === date);
-
-        return [
-          String(day),
-          found ? STATUS_LABELS[found.status] : "—",
-          found?.note || "",
-        ];
-      });
-
-      autoTable(doc, {
-        startY: startY + 8,
-        margin: {
-          left: x,
-          right: pageWidth - x - columnWidth,
-          top: 8,
-          bottom: 10,
-        },
-        tableWidth: columnWidth,
-        head: [["TGL", "STATUS", "CATATAN"]],
-        body: dayRows,
-        theme: "striped",
-        pageBreak: "auto",
-        rowPageBreak: "avoid",
-        styles: {
-          font: "helvetica",
-          fontSize: chunk.length === 2 ? 5.5 : 6,
-          cellPadding: chunk.length === 2 ? 0.35 : 0.5,
-          minCellHeight: 2.5,
-          overflow: "ellipsize",
-          textColor: [55, 55, 60],
-        },
-        headStyles: {
-          fillColor: [42, 42, 48],
-          textColor: 255,
-          fontStyle: "bold",
-          fontSize: chunk.length === 2 ? 5.5 : 6,
-        },
-        columnStyles: {
-          0: { cellWidth: chunk.length === 2 ? 12 : 22 },
-          1: { cellWidth: chunk.length === 2 ? 24 : 38 },
-          2: {
-            cellWidth:
-              chunk.length === 2 ? columnWidth - 36 : columnWidth - 60,
-          },
-        },
-        alternateRowStyles: {
-          fillColor: [248, 248, 250],
-        },
-        showHead: "everyPage",
-      });
-    });
+  const countsByHost = hosts.map((host) => {
+    const mine = filtered.filter((r) => r.host === host);
+    return {
+      host,
+      total: mine.length,
+      counts: statuses.map((s) => mine.filter((r) => r.status === s).length),
+    };
   });
 
-  const totalPages = doc.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(130, 130, 130);
-    doc.text(
-      `Dicetak: ${new Date().toLocaleDateString("id-ID")}  |  REDBOX INTERNAL · Nauell Tech`,
-      12,
-      202
-    );
-    doc.text(`${p} / ${totalPages}`, 285, 202, { align: "right" });
-  }
+  const head = [[
+    { content: "TGL", rowSpan: 2, styles: { valign: "middle", halign: "center" as const } },
+    ...hosts.map((host) => ({
+      content: host.toUpperCase(),
+      colSpan: 2,
+      styles: { halign: "center" as const },
+    })),
+  ], [
+    ...hosts.flatMap(() => ["STATUS", "CATATAN"]),
+  ]];
+
+  const body = Array.from({ length: days }, (_, i) => {
+    const day = i + 1;
+    const date = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return [
+      String(day),
+      ...hosts.flatMap((host) => {
+        const found = filtered.find(
+          (r) => r.host === host && r.attendance_date === date
+        );
+        return [
+          found ? statusShort[found.status] : "—",
+          found?.note || "",
+        ];
+      }),
+    ];
+  });
+
+  // Lebar kolom otomatis mengikuti jumlah host agar semua data muat di A4.
+  const dateWidth = 13;
+  const remainingWidth = pageWidth - 20 - dateWidth;
+  const perHostWidth = remainingWidth / Math.max(hosts.length, 1);
+  const statusWidth = Math.min(17, perHostWidth * 0.42);
+  const noteWidth = Math.max(8, perHostWidth - statusWidth);
+  const columnStyles: Record<number, { cellWidth: number; halign?: "left" | "center" }> = {
+    0: { cellWidth: dateWidth, halign: "center" },
+  };
+  hosts.forEach((_, i) => {
+    columnStyles[1 + i * 2] = { cellWidth: statusWidth, halign: "center" };
+    columnStyles[2 + i * 2] = { cellWidth: noteWidth };
+  });
+
+  autoTable(doc, {
+    startY: 25,
+    margin: { left: 10, right: 10, top: 25, bottom: 8 },
+    head,
+    body,
+    theme: "grid",
+    tableWidth: remainingWidth + dateWidth,
+    pageBreak: "avoid",
+    rowPageBreak: "avoid",
+    styles: {
+      font: "helvetica",
+      fontSize: hosts.length > 4 ? 7 : hosts.length > 2 ? 8 : 9,
+      cellPadding: 1.05,
+      minCellHeight: 4.5,
+      overflow: "ellipsize",
+      textColor: [45, 45, 50],
+      lineColor: [220, 220, 225],
+      lineWidth: 0.15,
+    },
+    headStyles: {
+      fillColor: [42, 42, 48],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: hosts.length > 4 ? 7 : 8,
+      cellPadding: 1.2,
+    },
+    columnStyles,
+    alternateRowStyles: { fillColor: [248, 248, 250] },
+    didParseCell(data) {
+      if (data.section === "body" && data.column.index > 0 && data.column.index % 2 === 1) {
+        const value = String(data.cell.raw || "");
+        if (value === "Full") data.cell.styles.textColor = [22, 125, 70];
+        else if (value === "4 Jam") data.cell.styles.textColor = [170, 115, 0];
+        else if (value === "Libur") data.cell.styles.textColor = [205, 35, 45];
+        else if (value === "Sakit") data.cell.styles.textColor = [35, 100, 180];
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  });
+
+  // Ringkasan dan footer pada halaman yang sama.
+  const summaryY = Math.min(pageHeight - 15, (doc as any).lastAutoTable?.finalY + 5 || pageHeight - 15);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(hosts.length > 4 ? 6.5 : 7.5);
+  doc.setTextColor(75, 75, 80);
+  const summary = countsByHost.map(({ host, total, counts }) =>
+    `${host}: Full ${counts[0]} · 4 Jam ${counts[1]} · Libur ${counts[2]} · Sakit ${counts[3]} · Total ${total}`
+  );
+  const summaryLines = doc.splitTextToSize(summary.join("     |     "), pageWidth - 20);
+  doc.text(summaryLines, 10, summaryY);
+
+  doc.setFontSize(7);
+  doc.setTextColor(130, 130, 135);
+  doc.text(
+    `Dicetak: ${new Date().toLocaleDateString("id-ID")}  |  REDBOX INTERNAL`,
+    10,
+    pageHeight - 5
+  );
 
   doc.save(`REDBOX-Absensi-${selected}-${month}.pdf`);
 }
