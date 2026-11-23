@@ -132,6 +132,7 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [exportingTarget, setExportingTarget] = useState<string | null>(null);
   const [exportModal, setExportModal] = useState(false);
+  const [exportTarget, setExportTarget] = useState<Host | "Semua">("Semua");
   const [exportStart, setExportStart] = useState(() => `${getLocalMonthStr()}-01`);
   const [exportEnd, setExportEnd] = useState(() => getLocalDateStr());
   const [salaryPaid, setSalaryPaid] = useState(false);
@@ -1250,7 +1251,7 @@ export default function Dashboard() {
                     </div>
                     <button
                       type="button"
-                      className="icon-btn"
+                      className="modal-close"
                       onClick={() => load(true)}
                       title="Muat ulang data"
                     >
@@ -1785,7 +1786,7 @@ export default function Dashboard() {
                             <button
                               type="button"
                               className="pdf-inline-btn"
-                              onClick={() => handleExport(h.name)}
+                              onClick={() => { setExportTarget(h.name); setExportStart(`${month}-01`); const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate(); setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`); setExportModal(true); }}
                               disabled={exportingTarget !== null}
                             >
                               {exportingTarget === h.name ? (
@@ -2053,7 +2054,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 className="pdf-primary"
-                onClick={() => handleExport("Semua")}
+                onClick={() => { setExportTarget("Semua"); setExportStart(`${month}-01`); const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate(); setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`); setExportModal(true); }}
                 disabled={exportingTarget !== null}
               >
                 {exportingTarget === "Semua" ? (
@@ -2092,13 +2093,13 @@ export default function Dashboard() {
       {/* Public Profile Photo Request Modal */}
       <AnimatePresence>
         {exportModal && (
-          <motion.div className="photo-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExportModal(false)}>
-            <motion.div className="photo-modal" initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 18, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-heading">
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExportModal(false)}>
+            <motion.div className="modal-card" initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 18, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-title-row">
                 <div><span className="eyebrow">LAPORAN CUSTOM</span><h2>Ekspor Absensi PDF</h2></div>
                 <button type="button" className="icon-btn" onClick={() => setExportModal(false)} aria-label="Tutup"><X size={18} /></button>
               </div>
-              <div className="photo-form">
+              <div className="entry-form">
                 <label>Dari tanggal<input type="date" value={exportStart} onChange={(e) => setExportStart(e.target.value)} /></label>
                 <label>Sampai tanggal<input type="date" value={exportEnd} min={exportStart} onChange={(e) => setExportEnd(e.target.value)} /></label>
                 <label className="checkbox-row"><input type="checkbox" checked={salaryPaid} onChange={(e) => setSalaryPaid(e.target.checked)} /> Gaji sudah dibayar untuk periode ini</label>
@@ -2106,9 +2107,9 @@ export default function Dashboard() {
                 <p className="form-hint">Tanggal bebas dipilih, termasuk melewati pergantian bulan. Status pembayaran akan dicantumkan pada PDF yang diunduh.</p>
                 <div className="modal-actions">
                   <button type="button" className="secondary-btn" onClick={() => setExportModal(false)}>Batal</button>
-                  <button type="button" className="primary-btn" disabled={exportingTarget !== null || !exportStart || !exportEnd || exportStart > exportEnd} onClick={() => handleExport("Semua")}>
+                  <button type="button" className="primary-btn" disabled={exportingTarget !== null || !exportStart || !exportEnd || exportStart > exportEnd} onClick={() => handleExport(exportTarget)}>
                     {exportingTarget === "Semua" ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
-                    <span>Unduh PDF</span>
+                    <span>Unduh PDF {exportTarget === "Semua" ? "Gabungan" : exportTarget}</span>
                   </button>
                 </div>
               </div>
