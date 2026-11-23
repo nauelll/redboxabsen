@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Attendance, DEFAULT_HOSTS, Host, Status, STATUS_LABELS } from "./types";
+import { Attendance, DEFAULT_HOSTS, Host, Status } from "./types";
 
 async function loadLogo(): Promise<string | null> {
   try {
@@ -24,8 +24,8 @@ export async function exportAttendancePdf(
   selected: Host | "Semua",
   allHosts: Host[] = DEFAULT_HOSTS
 ) {
-  // Satu lembar A4 landscape: tanggal sebagai baris, setiap host sebagai kolom.
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  // Format portrait agar laporan mudah dibaca dan hemat kertas.
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const [year, mon] = month.split("-").map(Number);
@@ -49,8 +49,6 @@ export async function exportAttendancePdf(
   };
 
   const logo = await loadLogo();
-
-  // Header dibuat ringkas agar area tabel tetap luas.
   if (logo) {
     try {
       doc.addImage(logo, "PNG", 10, 7, 13, 13);
@@ -81,12 +79,9 @@ export async function exportAttendancePdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(105, 105, 110);
-  doc.text(
-    selected === "Semua" ? "Semua host" : selected,
-    pageWidth - 10,
-    18,
-    { align: "right" }
-  );
+  doc.text(selected === "Semua" ? "Semua host" : selected, pageWidth - 10, 18, {
+    align: "right",
+  });
 
   const countsByHost = hosts.map((host) => {
     const mine = filtered.filter((r) => r.host === host);
@@ -97,90 +92,77 @@ export async function exportAttendancePdf(
     };
   });
 
-  const head = [[
-    { content: "TGL", rowSpan: 2, styles: { valign: "middle" as const, halign: "center" as const } },
-    ...hosts.map((host) => ({
-      content: host.toUpperCase(),
-      colSpan: 2,
-      styles: { halign: "center" as const },
-    })),
-  ], [
-    ...hosts.flatMap(() => ["STATUS", "CATATAN"]),
-  ]];
-
+  // Satu kolom per host. Catatan ikut di belakang status dan otomatis
+  // dipotong bila terlalu panjang, sehingga tabel tetap rapi di A4 portrait.
+  const head = [["TGL", ...hosts.map((host) => host.toUpperCase())]];
   const body = Array.from({ length: days }, (_, i) => {
     const day = i + 1;
     const date = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return [
       String(day),
-      ...hosts.flatMap((host) => {
+      ...hosts.map((host) => {
         const found = filtered.find(
           (r) => r.host === host && r.attendance_date === date
         );
-        return [
-          found ? statusShort[found.status] : "—",
-          found?.note || "",
-        ];
+        if (!found) return "—";
+        const note = found.note?.trim();
+        return note ? `${statusShort[found.status]} · ${note}` : statusShort[found.status];
       }),
     ];
   });
 
-  // Lebar kolom otomatis mengikuti jumlah host agar semua data muat di A4.
+  const tableWidth = pageWidth - 20;
   const dateWidth = 13;
-  const remainingWidth = pageWidth - 20 - dateWidth;
-  const perHostWidth = remainingWidth / Math.max(hosts.length, 1);
-  const statusWidth = Math.min(17, perHostWidth * 0.42);
-  const noteWidth = Math.max(8, perHostWidth - statusWidth);
-  const columnStyles: Record<number, { cellWidth: number; halign?: "left" | "center" }> = {
-    0: { cellWidth: dateWidth, halign: "center" },
-  };
-  hosts.forEach((_, i) => {
-    columnStyles[1 + i * 2] = { cellWidth: statusWidth, halign: "center" };
-    columnStyles[2 + i * 2] = { cellWidth: noteWidth };
-  });
+  const hostWidth = (tableWidth - dateWidth) / Math.max(hosts.length, 1);
+  const fontSize = hosts.length > 5 ? 7 : hosts.length > 3 ? 8 : hosts.length > 1 ? 10 : 11;
 
   autoTable(doc, {
-    startY: 25,
-    margin: { left: 10, right: 10, top: 25, bottom: 8 },
+    startY: 26,
+    margin: { left: 10, right: 10, top: 26, bottom: 12 },
     head,
     body,
     theme: "grid",
-    tableWidth: remainingWidth + dateWidth,
+    tableWidth,
     pageBreak: "avoid",
     rowPageBreak: "avoid",
     styles: {
       font: "helvetica",
-      fontSize: hosts.length > 4 ? 7 : hosts.length > 2 ? 8 : 9,
-      cellPadding: 1.05,
-      minCellHeight: 4.5,
+      fontSize,
+      cellPadding: { top: 1.35, right: 1.5, bottom: 1.35, left: 1.5 },
+      minCellHeight: 6.2,
       overflow: "ellipsize",
+      valign: "middle",
       textColor: [45, 45, 50],
-      lineColor: [220, 220, 225],
-      lineWidth: 0.15,
+      lineColor: [215, 215, 220],
+      lineWidth: 0.18,
     },
     headStyles: {
       fillColor: [42, 42, 48],
       textColor: 255,
       fontStyle: "bold",
-      fontSize: hosts.length > 4 ? 7 : 8,
-      cellPadding: 1.2,
+      fontSize: Math.max(8, fontSize),
+      halign: "center",
+      cellPadding: 1.8,
     },
-    columnStyles,
+    columnStyles: {
+      0: { cellWidth: dateWidth, halign: "center", fontStyle: "bold" },
+      ...Object.fromEntries(
+        hosts.map((_, i) => [i + 1, { cellWidth: hostWidth, halign: "left" as const }])
+      ),
+    },
     alternateRowStyles: { fillColor: [248, 248, 250] },
     didParseCell(data) {
-      if (data.section === "body" && data.column.index > 0 && data.column.index % 2 === 1) {
-        const value = String(data.cell.raw || "");
-        if (value === "Full") data.cell.styles.textColor = [22, 125, 70];
-        else if (value === "4 Jam") data.cell.styles.textColor = [170, 115, 0];
-        else if (value === "Libur") data.cell.styles.textColor = [205, 35, 45];
-        else if (value === "Sakit") data.cell.styles.textColor = [35, 100, 180];
-        data.cell.styles.fontStyle = "bold";
-      }
+      if (data.section !== "body" || data.column.index === 0) return;
+      const value = String(data.cell.raw || "");
+      if (value.startsWith("Full")) data.cell.styles.textColor = [22, 125, 70];
+      else if (value.startsWith("4 Jam")) data.cell.styles.textColor = [170, 115, 0];
+      else if (value.startsWith("Libur")) data.cell.styles.textColor = [205, 35, 45];
+      else if (value.startsWith("Sakit")) data.cell.styles.textColor = [35, 100, 180];
     },
   });
 
-  // Ringkasan dan footer pada halaman yang sama.
-  const summaryY = Math.min(pageHeight - 15, (doc as any).lastAutoTable?.finalY + 5 || pageHeight - 15);
+  const finalY = (doc as any).lastAutoTable?.finalY ?? 245;
+  const summaryY = Math.min(finalY + 5, pageHeight - 17);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(hosts.length > 4 ? 6.5 : 7.5);
   doc.setTextColor(75, 75, 80);
