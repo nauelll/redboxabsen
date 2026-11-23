@@ -2083,9 +2083,14 @@ export default function Dashboard() {
                 <button type="button" className="icon-btn" onClick={() => setExportModal(false)} aria-label="Tutup"><X size={18} /></button>
               </div>
               <div className="entry-form">
+                <label>Pilih host
+                  <select value={exportTarget} onChange={(e) => setExportTarget(e.target.value as Host)}>
+                    {activeHostNames.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </label>
                 <label>Dari tanggal<input type="date" value={exportStart} onChange={(e) => setExportStart(e.target.value)} /></label>
                 <label>Sampai tanggal<input type="date" value={exportEnd} min={exportStart} onChange={(e) => setExportEnd(e.target.value)} /></label>
-                <p className="form-hint">PDF hanya untuk host {exportTarget}. Atur rentang tanggal sesuai periode yang ingin dicetak. Penanda pembayaran dapat ditulis pada kolom Catatan melalui menu Edit absensi.</p>
+                <p className="form-hint">PDF akan dibuat khusus untuk host yang dipilih. Atur rentang tanggal sesuai periode yang ingin dicetak. Penanda pembayaran dapat ditulis pada kolom Catatan melalui menu Edit absensi.</p>
                 <div className="modal-actions">
                   <button type="button" className="secondary-btn" onClick={() => setExportModal(false)}>Batal</button>
                   <button type="button" className="primary-btn" disabled={exportingTarget !== null || !exportStart || !exportEnd || exportStart > exportEnd} onClick={() => handleExport(exportTarget)}>
