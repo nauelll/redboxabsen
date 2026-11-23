@@ -2656,3 +2656,11 @@ tbody tr:hover {
   flex: 1;
 }
 
+
+/* Custom PDF export dialog */
+.modal-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.modal-title-row h2{margin:4px 0 0;font-size:20px;color:var(--ink)}
+.modal-close{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;width:36px;height:36px;display:grid;place-items:center;cursor:pointer}
+.entry-form .checkbox-row{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid rgba(22,125,70,.25);border-radius:10px;background:rgba(22,125,70,.06);font-size:13px}
+.entry-form .checkbox-row input[type="checkbox"]{appearance:auto;width:18px;height:18px;min-width:18px;margin:0;padding:0;accent-color:#16804a}
+.form-hint{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
