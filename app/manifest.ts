@@ -1,18 +1,19 @@
-import type { MetadataRoute } from 'next'
+import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Redbox Absensi',
-    short_name: 'Redbox Absen',
-    description: 'Redbox Live Attendance',
-    start_url: '/dashboard',
-    display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#000000',
+    id: "/",
+    name: "REDBOX LIVE ATTENDANCE",
+    short_name: "REDBOX",
+    description: "Aplikasi absensi host live REDBOX",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    orientation: "any",
+    background_color: "#FAF7F2",
+    theme_color: "#dc2626",
     icons: [
-      { src: '/redbox-logo.png', sizes: 'any', type: 'image/png' },
-      { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { src: "/icon.png", sizes: "any", type: "image/png", purpose: "any" },
     ],
-  }
+  };
 }
