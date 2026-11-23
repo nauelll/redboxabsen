@@ -98,7 +98,7 @@ export async function exportAttendancePdf(
   });
 
   const head = [[
-    { content: "TGL", rowSpan: 2, styles: { valign: "middle", halign: "center" as const } },
+    { content: "TGL", rowSpan: 2, styles: { valign: "middle" as const, halign: "center" as const } },
     ...hosts.map((host) => ({
       content: host.toUpperCase(),
       colSpan: 2,
