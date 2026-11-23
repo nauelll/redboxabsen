@@ -2040,7 +2040,7 @@ export default function Dashboard() {
                 <button
                   key={h.id}
                   type="button"
-                  onClick={() => handleExport(h.name)}
+                  onClick={() => { setExportTarget(h.name); setExportStart(`${month}-01`); const lastDay = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate(); setExportEnd(`${month}-${String(lastDay).padStart(2, "0")}`); setExportModal(true); }}
                   disabled={exportingTarget !== null}
                 >
                   {exportingTarget === h.name ? (
