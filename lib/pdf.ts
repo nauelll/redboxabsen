@@ -22,24 +22,32 @@ export async function exportAttendancePdf(
   rows: Attendance[],
   month: string,
   selected: Host | "Semua",
-  allHosts: Host[] = DEFAULT_HOSTS
+  allHosts: Host[] = DEFAULT_HOSTS,
+  startDate = `${month}-01`,
+  endDate = `${month}-${String(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()).padStart(2, "0")}`,
+  paymentStatus: "paid" | "unpaid" = "unpaid",
+  paidDate?: string
 ) {
   // Format portrait agar laporan mudah dibaca dan hemat kertas.
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const [year, mon] = month.split("-").map(Number);
-  const monthName = new Date(year, mon - 1, 1).toLocaleDateString("id-ID", {
-    month: "long",
-    year: "numeric",
-  });
+  const formatDate = (value: string) =>
+    new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
+      day: "2-digit", month: "long", year: "numeric",
+    });
+  const rangeLabel = `${formatDate(startDate)} – ${formatDate(endDate)}`;
 
   const hosts: Host[] =
     selected === "Semua"
       ? (allHosts.length ? allHosts : DEFAULT_HOSTS)
       : [selected];
-  const filtered = rows.filter((r) => hosts.includes(r.host));
-  const days = new Date(year, mon, 0).getDate();
+  const filtered = rows.filter(
+    (r) => hosts.includes(r.host) && r.attendance_date >= startDate && r.attendance_date <= endDate
+  );
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const days = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
   const statuses: Status[] = ["full", "four_hours", "holiday", "sick"];
   const statusShort: Record<Status, string> = {
     full: "Full",
@@ -73,15 +81,13 @@ export async function exportAttendancePdf(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.setTextColor(30, 30, 35);
-  doc.text(monthName.toLocaleUpperCase("id-ID"), pageWidth - 10, 12, {
-    align: "right",
-  });
+  doc.text("PERIODE ABSENSI", pageWidth - 10, 12, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(105, 105, 110);
-  doc.text(selected === "Semua" ? "Semua host" : selected, pageWidth - 10, 18, {
-    align: "right",
-  });
+  doc.text(selected === "Semua" ? "Semua host" : selected, pageWidth - 10, 18, { align: "right" });
+  doc.setFontSize(7);
+  doc.text(rangeLabel, pageWidth - 10, 22, { align: "right" });
 
   const countsByHost = hosts.map((host) => {
     const mine = filtered.filter((r) => r.host === host);
@@ -94,12 +100,13 @@ export async function exportAttendancePdf(
 
   // Satu kolom per host. Catatan ikut di belakang status dan otomatis
   // dipotong bila terlalu panjang, sehingga tabel tetap rapi di A4 portrait.
-  const head = [["TGL", ...hosts.map((host) => host.toUpperCase())]];
+  const head = [["TANGGAL", ...hosts.map((host) => host.toUpperCase())]];
   const body = Array.from({ length: days }, (_, i) => {
-    const day = i + 1;
-    const date = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const current = new Date(start);
+    current.setDate(start.getDate() + i);
+    const date = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
     return [
-      String(day),
+      formatDate(date),
       ...hosts.map((host) => {
         const found = filtered.find(
           (r) => r.host === host && r.attendance_date === date
@@ -112,13 +119,13 @@ export async function exportAttendancePdf(
   });
 
   const tableWidth = pageWidth - 20;
-  const dateWidth = 13;
+  const dateWidth = 25;
   const hostWidth = (tableWidth - dateWidth) / Math.max(hosts.length, 1);
   const fontSize = hosts.length > 5 ? 7 : hosts.length > 3 ? 8 : hosts.length > 1 ? 10 : 11;
 
   autoTable(doc, {
-    startY: 26,
-    margin: { left: 10, right: 10, top: 26, bottom: 12 },
+    startY: 29,
+    margin: { left: 10, right: 10, top: 29, bottom: 22 },
     head,
     body,
     theme: "grid",
@@ -162,7 +169,7 @@ export async function exportAttendancePdf(
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY ?? 245;
-  const summaryY = Math.min(finalY + 5, pageHeight - 17);
+  const summaryY = Math.min(finalY + 5, pageHeight - 30);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(hosts.length > 4 ? 6.5 : 7.5);
   doc.setTextColor(75, 75, 80);
@@ -172,13 +179,19 @@ export async function exportAttendancePdf(
   const summaryLines = doc.splitTextToSize(summary.join("     |     "), pageWidth - 20);
   doc.text(summaryLines, 10, summaryY);
 
+  const statusY = Math.min(summaryY + summaryLines.length * 3.2 + 4, pageHeight - 17);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(paymentStatus === "paid" ? 22 : 190, paymentStatus === "paid" ? 125 : 35, paymentStatus === "paid" ? 70 : 40);
+  doc.text(paymentStatus === "paid" ? "STATUS GAJI: SUDAH DIBAYAR" : "STATUS GAJI: BELUM DIBAYAR", 10, statusY);
+  if (paymentStatus === "paid" && paidDate) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(`Dibayarkan pada: ${formatDate(paidDate)} | Periode: ${rangeLabel}`, 10, statusY + 5);
+  }
   doc.setFontSize(7);
   doc.setTextColor(130, 130, 135);
-  doc.text(
-    `Dicetak: ${new Date().toLocaleDateString("id-ID")}  |  REDBOX INTERNAL`,
-    10,
-    pageHeight - 5
-  );
+  doc.text(`Dicetak: ${new Date().toLocaleDateString("id-ID")}  |  REDBOX INTERNAL`, 10, pageHeight - 5);
 
-  doc.save(`REDBOX-Absensi-${selected}-${month}.pdf`);
+  doc.save(`REDBOX-Absensi-${selected}-${startDate}-sd-${endDate}.pdf`);
 }
