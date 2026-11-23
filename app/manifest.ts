@@ -10,10 +10,10 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "any",
-    background_color: "#FAF7F2",
+    background_color: "#111014",
     theme_color: "#dc2626",
     icons: [
-      { src: "/icon.png", sizes: "any", type: "image/png", purpose: "any" },
+      { src: "/redbox-app-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],
   };
 }
