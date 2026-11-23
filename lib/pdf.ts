@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Attendance, DEFAULT_HOSTS, Host, Status } from "./types";
+import { Attendance, Host, Status } from "./types";
 
 async function loadLogo(): Promise<string | null> {
   try {
