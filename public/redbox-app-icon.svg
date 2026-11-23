@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#dc101b"/>
+  <path d="M118 92h220c38 0 66 28 66 66v25H329v-18c0-11-8-19-20-19H203v130h68c-21 23-33 51-34 83h-52c-38 0-67-29-67-67V92z" fill="#fff"/>
+  <path d="M275 278h129v72c0 38-28 66-66 66h-63v-72h53v-7h-53z" fill="#fff"/>
+  <text x="256" y="458" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="800" letter-spacing="-5" fill="#fff">redbox</text>
+</svg>
